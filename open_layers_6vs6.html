@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/build/ol.js"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.14.1/css/ol.css">
+	<title>Mapa web</title>
+
+	<style type="text/css">
+	#mibloquemapa {							/* Asignaremos estos valores a nuestro id=mibloquemapa es decir al mapa que crearemos*/
+		width:  90%;						/*Le decimos que el mapa tenga 600px de ancho*/
+		height: 550px;						/*Le decimos que el mapa tenga 600px de alto*/
+		box-shadow: 10px 10px 10px   #9B9999 ;	/*Le damos un sombreado y el colo un azul intenso hexadecimal*/
+	}
+	.ol-mouse-position {
+		font-size:18px;
+		font-family: Arial black;
+		top:5px;
+		right:5px;
+		position:absolute;
+		color:  red;
+	}
+	</style>
+</head>
+<body>
+	<!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+	<h1>Archivo: Open_layers_tema6.html</h1>
+	<div id='mibloquemapa' class='mibloque'></div>
+	<script type="text/javascript">
+		//Modificamos estilo de capas
+		var estilonuevo_lineas = [ new ol.style.Style({
+			stroke: new ol.style.Stroke({
+			color: 'red',
+			width: 3
+			}),
+		})];
+		var estilonuevo_lineas2 = [ new ol.style.Style({
+			stroke: new ol.style.Stroke({
+			color: 'blue',
+			width: 5
+			}),
+		})];
+		var estilonuevo_puntos = [ new ol.style.Style({
+			image: new ol.style.Circle({
+				radius:5,
+				fill: new ol.style.Fill({
+				color: 'green'}),
+				stroke: new ol.style.Stroke({
+				color: 'black',
+				width: 3}),
+			}),
+		})];
+		//Modificamos estilo de texto ( en este caso para las etiquetas de los mojones)
+		var EstiloTextoMojon = function(feature) { return [new ol.style.Style ({
+			text: new ol.style.Text({
+				font: '20px Calibri,sans-serif',
+				text: feature.get('NOMB_MOJON'),
+				stroke: new ol.style.Stroke({
+					color: 'red',
+					width: 1
+				}),
+				offsetX: 20,
+				offsetY: 20,
+			}),
+		})];
+		};
+		//modificamos el estilo de los polígonos, en este caso los concejos.
+		var EstiloSuperficies = function(feature) {
+			return [new ol.style.Style({
+				fill: new ol.style.Fill({
+					color: 'orange',
+				}),
+			})];
+		};
+		//definimos capa base
+		var CapaBase = new ol.layer.Tile({ source:new ol.source.OSM() });		//creamos variable capa base que es una nueva imagen de tipo imagen y su fuente de datos es el mapa de OSM
+		var CapaBaseStamen = new ol.layer.Tile({source: new ol.source.Stamen({layer: 'toner'})}); // capa base de mapas de Stamen (disponibles: terrain (America), watercolor, toner)
+		// Ahora creamos las variables de las fuentes, donde buscar las capas y que formato tienen:
+		var fuente1 = new ol.source.Vector({ format: new ol.format.GeoJSON(), url:'http://localhost:8080/geoserver/www/Municipio_Lineal.geojson'});
+		var fuente2 = new ol.source.Vector({ format: new ol.format.GeoJSON(), url:'http://localhost:8080/geoserver/www/Mojones_Puntual.geojson'});
+		var fuente3 = new ol.source.Vector({ format: new ol.format.GeoJSON(), url:'http://localhost:8080/geoserver/www/Concejos_Superficial.geojson'});
+		var fuente4 = new ol.source.Vector({ format: new ol.format.GeoJSON(), url:'http://localhost:8080/geoserver/data_dir/www/Concejos_Lineal.geojson'});
+		// Aquí creamos las capas a partir de las fuentes, damos un título y una proyeccion. Mejor usar siempre EPSG:4326
+		var capa_superficial = new ol.layer.Vector({
+			title: 'Concejos',
+			source: fuente3,
+			projection: 'EPSG:4326',
+			style: EstiloSuperficies,
+			opacity: 0.25,
+		});
+		var capa_lineal1 = new ol.layer.Vector({
+			title: 'Municipio',
+			source: fuente1,
+			projection: 'EPSG:4326',
+			style: estilonuevo_lineas2,
+		});
+		var capa_lineal2 = new ol.layer.Vector({
+			title: 'Limite concejos',
+			source: fuente4,
+			projection: 'EPSG:4326',
+			style: estilonuevo_lineas,
+		});
+		var capa_puntual1= new ol.layer.Vector ({
+			title:'Mojones',
+			source: fuente2,
+			projection: 'EPSG:4326',
+			style: estilonuevo_puntos,
+		});
+		var capa_puntual2= new ol.layer.Vector ({
+			title:'Texto de los mojones',
+			source: fuente2,
+			projection: 'EPSG:4326',
+			style: EstiloTextoMojon,
+		});
+		// definimos los controles:
+		var controles = ol.control.defaults().extend([
+			new ol.control.FullScreen(),					//control de ocupar toda la pantalla
+			new ol.control.ZoomSlider(),					//control de barra para augmentar o disminuir el zoom
+			new ol.control.ScaleLine(),						//control de lína de escala
+			new ol.control.ZoomToExtent (),					//control de augmentar a zoom mundial
+			new ol.control.MousePosition({projection: 'EPSG:4326', coordinateFormat: function(coordinate) { return ol.coordinate.format(coordinate, '{y}, {x}', 6); } }),	//control de indicar lon y lat
+		]);
+
+		// definimos como se va a visualizar:
+		var lavista = new ol.View({ center: ol.proj.fromLonLat([-2.674246,42.839311]), zoom: 10});
+		// definimos el mapa
+		var mimapa = new ol.Map({
+			target: 'mibloquemapa',
+			layers: [CapaBaseStamen, capa_superficial, capa_lineal1, capa_lineal2, capa_puntual1, capa_puntual2],
+			view: lavista,
+			controls: controles,
+		});
+	</script>
+</body>
+</html>

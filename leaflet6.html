@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<!-- La hoja de estilos, que vamos a cargar: -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
+	<!-- La libreria javascript que vamos a utilizar , **** asegurate siempre de poner antes la hoja de estilos*** -->
+	<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js" integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw==" crossorigin="">
+	</script>
+	<!-- Resrevamos una zona del DOM para el mapa-->
+	<style>
+		#zona_reservada_map {
+		width: 100%;
+		height: 600px;
+		box-shadow: 5px 5px 5px #777;
+		}
+	</style>
+	<!-- Cargamos las variables de la geometria geoJSON recordad las variables asociadas municipio, concejos, concejosuperficial y mojones-->
+	<script type="text/javascript" src="Municipio_Lineal.js"></script>
+	<script type="text/javascript" src="Concejos_Lineal.js"></script>
+	<script type="text/javascript" src="Concejos_Superficial.js"></script>
+	<script type="text/javascript" src="Mojones_Puntual.js"></script>
+</head>
+<body>
+	<!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+	<h1>Mi primer mapa con Leaflet: Leaflet6.html</h1>
+	<div id="zona_reservada_map"></div>
+	<script type="text/javascript">
+
+		// asignamos estilos de línea
+		var estilo_lineas1 = {
+			'color': "red",
+			'weight': 2,
+		};
+		//función para determinar que color necesitamos según el número de millones
+		function dime_color(valor_testear){
+			var el_color = 'blue';					//Color azul por defecto y más de 10
+			var millones = valor_testear/1000000;	//Trabajaremos en número de millones
+			if (millones < 10)
+				(el_color = 'green')				//cambiamos el color a verde si millones < 10
+			if (millones < 5)
+				(el_color = 'red')					//cambiamos el color a rojo si millones < 5
+			return(el_color)						//Esta funcion nos devolverá el color a asignar dependiendo del número de millones
+		};
+		//Función para asignar el estilo a polígonos teniendo en cuenta la función dime_color
+		function estilo_poligonos (elementos){
+			return{
+				color: dime_color(parseFloat(elementos.properties.AREA)),
+				fillcolor: dime_color(parseFloat(elementos.properties.AREA)),
+				fillOpacity: 0.5,
+			};
+		};
+		// Vamos a cargar una capa base de open street map, lo haremos como un tile layer. Para ello habrá que definirle la URL, el texto con la atribución y el máximo nivel de zoom de la capa.//
+		var capaBASE = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution:'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'+'contributors', maxZoom: 25,
+		});
+		//Recordad hasta ahora solamente le hemos dicho que queremos la capa de OSM//
+
+		// Definimos las capas superpuestas en variables para gestionar las capas
+		var capa_municipio = L.geoJSON(municipio);
+		var capa_concejos = L.geoJSON(concejos, {style: estilo_lineas1});
+		var capa_superficies = L.geoJSON(concejosuperficial, {style:estilo_poligonos});
+		var capa_mojones = L.geoJSON(mojones);
+
+		//Creamos un control de capas
+		//Creamos dos variables que contienen la capa base (paso 1º) y las superpuestas (paso 2º)
+		var mapasbase = {"OpenStreetMap": capaBASE};
+		var superpuestas = {
+			"Municipio": capa_municipio,
+			"Superficies": capa_superficies,
+			"Concejos": capa_concejos,
+			"Mojones": capa_mojones,
+		};
+
+		//Este es mi variable mapa y por tanto la MAS IMPORTANTE//
+		var mapa = L.map('zona_reservada_map', {
+			center: [42.97802, -2.64280],			//Primero latitud y luego longitud//
+			zoom: 12,
+			layers: [capaBASE, capa_municipio, capa_concejos] //Paso 3º para el control de capas, añadir las capas a visualizar por defecto.
+		});
+		// Creamos un control de escala al mapa, se debe poner después de tener la varaible "mapa".//
+		L.control.scale().addTo(mapa);
+		//4º paso es añadir la variable de control de capas
+		L.control.layers(mapasbase, superpuestas, {collapsed:true}).addTo(mapa); // collapsed false or true --> para ver las capas colapsadas o no.
+
+	</script>
+</body>
+</html>
